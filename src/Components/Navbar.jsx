@@ -1,5 +1,5 @@
 import { Bot, Loader2, Search, SendHorizontal, X } from "lucide-react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   assistantModeLabel,
   getFarmAssistantReply,
@@ -21,6 +21,7 @@ const Navbar = ({
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [chatInput, setChatInput] = useState("");
   const [isReplying, setIsReplying] = useState(false);
+  const chatInputRef = useRef(null);
   const [chatMessages, setChatMessages] = useState([
     {
       role: "assistant",
@@ -94,6 +95,9 @@ const Navbar = ({
     setChatMessages((prev) => [...prev, { role: "user", text: cleanQuestion }]);
     setChatInput("");
     setIsReplying(true);
+    if (chatInputRef.current) {
+      chatInputRef.current.style.height = "auto";
+    }
 
     const reply = await getFarmAssistantReply({
       question: cleanQuestion,
@@ -102,6 +106,26 @@ const Navbar = ({
 
     setChatMessages((prev) => [...prev, { role: "assistant", text: reply }]);
     setIsReplying(false);
+  };
+
+  const autoResizeChatInput = (element) => {
+    if (!element) return;
+    element.style.height = "auto";
+    element.style.height = `${Math.min(element.scrollHeight, 160)}px`;
+  };
+
+  const handleChatInputChange = (e) => {
+    setChatInput(e.target.value);
+    autoResizeChatInput(e.target);
+  };
+
+  const handleChatInputKeyDown = (e) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      if (!isReplying) {
+        sendAssistantMessage(chatInput);
+      }
+    }
   };
 
   const handleChatSubmit = async (e) => {
@@ -146,39 +170,56 @@ const Navbar = ({
     }
   };
 
+  useEffect(() => {
+    if (!isAssistantOpen) return;
+    if (!chatInputRef.current) return;
+
+    const frame = requestAnimationFrame(() => {
+      chatInputRef.current?.focus();
+      autoResizeChatInput(chatInputRef.current);
+    });
+
+    return () => cancelAnimationFrame(frame);
+  }, [isAssistantOpen]);
+
   return (
     <div>
-      {isAssistantOpen && (
-        <div className="fixed inset-0 z-120 flex items-end justify-end p-4">
-          <div
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setIsAssistantOpen(false)}
-          />
-
-          <div className="relative w-full max-w-120 rounded-2xl border border-white/15 bg-slate-950/80 backdrop-blur-xl shadow-2xl overflow-hidden">
-            <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/80">
-                  Wither Farm Assistant
-                </p>
-                <p className="text-[11px] text-white/60">
-                  Advice from your current weather data
-                </p>
-              </div>
-              <span className="rounded-full border border-emerald-300/35 bg-emerald-400/15 px-2 py-1 text-[10px] uppercase tracking-normal text-emerald-200">
-                {assistantModeLabel}
-              </span>
-              <button
-                type="button"
-                onClick={() => setIsAssistantOpen(false)}
-                className="text-white/70 hover:text-white"
-                aria-label="Close assistant"
-              >
-                <X size={16} />
-              </button>
+      <div
+        className={`fixed inset-0 z-120 transition-all duration-300 ease-out ${
+          isAssistantOpen
+            ? "pointer-events-auto bg-slate-950/95 opacity-100 backdrop-blur-xl"
+            : "pointer-events-none bg-slate-950/0 opacity-0"
+        }`}
+      >
+        <div
+          className={`relative flex h-full w-full flex-col overflow-hidden transition-transform duration-300 ease-out ${
+            isAssistantOpen ? "translate-y-0" : "translate-y-5"
+          }`}
+        >
+          <div className="px-4 py-3 border-b border-white/10 flex items-center justify-between">
+            <div>
+              <p className="text-xs uppercase tracking-[0.2em] text-cyan-300/80">
+                Wither Farm Assistant
+              </p>
+              <p className="text-[11px] text-white/60">
+                Advice from your current weather data
+              </p>
             </div>
+            <span className="rounded-full border border-emerald-300/35 bg-emerald-400/15 px-2 py-1 text-[10px] uppercase tracking-normal text-emerald-200">
+              {assistantModeLabel}
+            </span>
+            <button
+              type="button"
+              onClick={() => setIsAssistantOpen(false)}
+              className="text-white/70 hover:text-white"
+              aria-label="Close assistant"
+            >
+              <X size={16} />
+            </button>
+          </div>
 
-            <div className="p-3 border-b border-white/10 flex flex-wrap gap-2 max-h-28 overflow-y-auto no-scrollbar">
+          <div className="max-h-24 overflow-y-auto border-b border-white/10 p-3 no-scrollbar sm:max-h-28">
+            <div className="flex flex-wrap gap-2">
               {quickPrompts.map((prompt) => (
                 <button
                   key={prompt}
@@ -190,52 +231,53 @@ const Navbar = ({
                 </button>
               ))}
             </div>
-
-            <div className="h-72 overflow-y-auto no-scrollbar p-3 space-y-2">
-              {chatMessages.map((message, index) => (
-                <div
-                  key={`${message.role}-${index}`}
-                  className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${
-                    message.role === "user"
-                      ? "ml-auto bg-cyan-500/30 border border-cyan-300/20 text-white"
-                      : "mr-auto bg-white/10 border border-white/10 text-white/90"
-                  }`}
-                >
-                  {message.text}
-                </div>
-              ))}
-              {isReplying && (
-                <div className="mr-auto rounded-xl px-3 py-2 text-sm bg-white/10 border border-white/10 text-white/70 flex items-center gap-2">
-                  <Loader2 className="animate-spin" size={14} />
-                  Thinking...
-                </div>
-              )}
-            </div>
-
-            <form
-              onSubmit={handleChatSubmit}
-              className="p-3 border-t border-white/10 flex gap-2"
-            >
-              <input
-                autoFocus
-                type="text"
-                value={chatInput}
-                onChange={(e) => setChatInput(e.target.value)}
-                placeholder="Ask: should I wet my plants today?"
-                className="flex-1 rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/45 outline-none"
-              />
-              <button
-                type="submit"
-                disabled={isReplying}
-                className="rounded-lg border border-cyan-300/30 bg-cyan-500/25 text-cyan-100 px-3 py-2 disabled:opacity-50"
-                aria-label="Send message"
-              >
-                <SendHorizontal size={16} />
-              </button>
-            </form>
           </div>
+
+          <div className="flex-1 min-h-0 overflow-y-auto no-scrollbar p-3 space-y-2">
+            {chatMessages.map((message, index) => (
+              <div
+                key={`${message.role}-${index}`}
+                className={`w-fit max-w-[85%] wrap-break-word whitespace-pre-wrap rounded-xl px-3 py-2 text-sm leading-relaxed ${
+                  message.role === "user"
+                    ? "ml-auto bg-cyan-500/30 border border-cyan-300/20 text-white"
+                    : "mr-auto bg-white/10 border border-white/10 text-white/90"
+                }`}
+              >
+                {message.text}
+              </div>
+            ))}
+            {isReplying && (
+              <div className="mr-auto w-fit rounded-xl border border-white/10 bg-white/10 px-3 py-2 text-sm text-white/70 flex items-center gap-2">
+                <Loader2 className="animate-spin" size={14} />
+                Thinking...
+              </div>
+            )}
+          </div>
+
+          <form
+            onSubmit={handleChatSubmit}
+            className="flex gap-2 border-t border-white/10 p-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] sm:pb-3"
+          >
+            <textarea
+              ref={chatInputRef}
+              value={chatInput}
+              rows={1}
+              onChange={handleChatInputChange}
+              onKeyDown={handleChatInputKeyDown}
+              placeholder="Ask: should I wet my plants today?"
+              className="max-h-40 flex-1 resize-none overflow-y-auto rounded-lg border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/45 outline-none"
+            />
+            <button
+              type="submit"
+              disabled={isReplying}
+              className="self-end rounded-lg border border-cyan-300/30 bg-cyan-500/25 px-3 py-2 text-cyan-100 disabled:opacity-50"
+              aria-label="Send message"
+            >
+              <SendHorizontal size={16} />
+            </button>
+          </form>
         </div>
-      )}
+      </div>
       <div className="fixed bottom-0 mx-auto w-full p-4">
         {isInputFocused && citySuggestions.length > 0 && (
           <div className="mb-2 mx-auto max-w-172.5 rounded-xl border border-white/10 bg-black/35 backdrop-blur-xl p-2">
