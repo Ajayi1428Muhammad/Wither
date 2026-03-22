@@ -6,6 +6,8 @@ import DailyUpdate from "./DailyUpdate";
 import Navbar from "./Navbar";
 import InfoCards from "./InfoCards";
 import Moon from "./Moon";
+// import BrandLogo from "./BrandLogo";
+import WelcomeLoader from "./WelcomeLoader";
 import { useWeather } from "../Hooks/useWeather";
 
 const FarmerAnalytics = lazy(() => import("./FarmerAnalytics"));
@@ -22,9 +24,11 @@ const App = () => {
     }
   });
   const [toastMessage, setToastMessage] = useState("");
+  const [hasBootstrapped, setHasBootstrapped] = useState(false);
   const { data, isLoading, isPending, error, isOnline } =
     useWeather(selectedCity);
   const isSearching = !!selectedCity && isOnline && (isLoading || isPending);
+  const isFetchingWeather = isLoading || isPending;
 
   const handleSearchCity = (city) => {
     const cleanCity = city.trim();
@@ -77,8 +81,30 @@ const App = () => {
     return () => clearTimeout(timer);
   }, [error, selectedCity]);
 
+  useEffect(() => {
+    if (hasBootstrapped) return;
+
+    if (data || error) {
+      setHasBootstrapped(true);
+      return;
+    }
+
+    // Prevents indefinite splash when geolocation is blocked and query never starts.
+    const fallbackTimer = setTimeout(() => {
+      if (!isFetchingWeather) {
+        setHasBootstrapped(true);
+      }
+    }, 3200);
+
+    return () => clearTimeout(fallbackTimer);
+  }, [data, error, hasBootstrapped, isFetchingWeather]);
+
+  const showWelcomeLoader = !hasBootstrapped && (isFetchingWeather || !data);
+
   return (
     <div className="no-scrollbar overflow-x-auto w-full h-screen ">
+      <WelcomeLoader show={showWelcomeLoader} />
+
       {!isOnline && (
         <div className="fixed top-0 left-0 right-0 z-120 px-4 pt-4">
           <div className="mx-auto max-w-172.5 rounded-xl border border-red-300/50 bg-red-500/90 text-white text-sm px-4 py-3 shadow-xl backdrop-blur-md text-center">
@@ -87,7 +113,18 @@ const App = () => {
           </div>
         </div>
       )}
-      <div className="mb-30 max-w-172.5 mx-auto ">
+
+      {/* <div
+        className={`fixed left-1/2 -translate-x-1/2 z-50 px-4 transition-all duration-300 ${
+          !isOnline ? "top-20" : "top-4"
+        }`}
+      >
+        <div className="rounded-2xl border border-white/20 bg-white/10 px-3 py-2 shadow-lg backdrop-blur-md">
+          <BrandLogo size={34} loading={isFetchingWeather} withText />
+        </div>
+      </div> */}
+
+      <div className="mb-30 max-w-172.5 mx-auto pt-5">
         <Hero data={data} isPending={isPending} />
         <HourlyUpdate data={data} isPending={isPending} isLoading={isLoading} />
         <Updates1 data={data} />
