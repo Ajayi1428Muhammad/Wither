@@ -151,7 +151,6 @@ const App = () => {
         onUseCurrentLocation={handleUseCurrentLocation}
         onRemoveRecentCity={handleRemoveRecentCity}
         onClearRecentCities={handleClearRecentCities}
-        selectedCity={selectedCity}
         recentCities={recentCities}
         isSearching={isSearching}
         weatherData={data}

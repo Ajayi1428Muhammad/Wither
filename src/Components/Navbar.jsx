@@ -10,13 +10,12 @@ const Navbar = ({
   onUseCurrentLocation,
   onRemoveRecentCity,
   onClearRecentCities,
-  selectedCity,
   recentCities = [],
   isSearching,
   weatherData,
 }) => {
   const [isAssistantOpen, setIsAssistantOpen] = useState(false);
-  const [searchInput, setSearchInput] = useState(selectedCity || "");
+  const [searchInput, setSearchInput] = useState("");
   const [isInputFocused, setIsInputFocused] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(-1);
   const [chatInput, setChatInput] = useState("");
@@ -43,10 +42,6 @@ const Navbar = ({
     "Should I irrigate once or twice today?",
     "What is my safest farm task right now?",
   ];
-
-  useEffect(() => {
-    setSearchInput(selectedCity || "");
-  }, [selectedCity]);
 
   const normalizedInput = searchInput.trim().toLowerCase();
   const citySuggestions = normalizedInput
