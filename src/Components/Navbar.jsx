@@ -61,13 +61,18 @@ const Navbar = ({
 
   const submitSearch = (city) => {
     const cleanCity = city.trim();
-    if (!cleanCity) return;
+    if (!cleanCity) return false;
     onSearchCity(cleanCity);
+    return true;
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    submitSearch(searchInput);
+    const didSubmit = submitSearch(searchInput);
+    if (didSubmit) {
+      setSearchInput("");
+      setActiveSuggestionIndex(-1);
+    }
     setIsInputFocused(false);
   };
 
@@ -78,8 +83,11 @@ const Navbar = ({
   };
 
   const handleSuggestionSelect = (city) => {
-    setSearchInput(city);
-    submitSearch(city);
+    const didSubmit = submitSearch(city);
+    if (didSubmit) {
+      setSearchInput("");
+      setActiveSuggestionIndex(-1);
+    }
     setIsInputFocused(false);
   };
 

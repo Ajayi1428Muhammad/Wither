@@ -1,7 +1,13 @@
 import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 
-const API_KEY = import.meta.env.VITE_WEATHER_API_KEY;
+const API_KEY = (import.meta.env.VITE_WEATHER_API_KEY || "").trim();
+
+const normalizeCoords = (lat, lon) => ({
+  // 3 decimals keeps location accurate enough for weather while reducing GPS jitter refetches.
+  lat: Number(lat.toFixed(3)),
+  lon: Number(lon.toFixed(3)),
+});
 
 // 1. Helper to turn City Name -> Lat/Lon
 const fetchCoords = async (city) => {
@@ -66,14 +72,21 @@ export const useWeather = (searchQuery = "") => {
     const geoOptions = {
       enableHighAccuracy: true,
       timeout: 10000,
-      maximumAge: 0,
+      maximumAge: 60000,
     };
 
     const watcher = navigator.geolocation.watchPosition(
       (position) => {
-        setCoords({
-          lat: position.coords.latitude,
-          lon: position.coords.longitude,
+        const next = normalizeCoords(
+          position.coords.latitude,
+          position.coords.longitude,
+        );
+
+        setCoords((prev) => {
+          if (prev?.lat === next.lat && prev?.lon === next.lon) {
+            return prev;
+          }
+          return next;
         });
       },
       (error) => console.error("Location error:", error),
