@@ -40,10 +40,11 @@ One of the main challenges during development was optimizing the mobile experien
 1. **Clone the repository:**
    ```bash
    git clone [https://github.com/Ajayi1428Muhammad/wither.git](https://github.com/Ajayi1428Muhammad/wither.git)
+
 2. **Install dependencies:**
 ```bash
-npm install```
-
+npm install
+```
 3. **Environment Variables:**
 Create a `.env` file in the root directory and input your API Keys
 ```env
@@ -56,6 +57,6 @@ npm run dev
 ```
 ## 📩 Feedback
 I’m constantly improving Wither. If you have suggestions or find a bug, please let me know!
-[Send your feedback here] (https://docs.google.com/forms/d/e/1FAIpQLScg_6vArtfKqUUZ9vJ-wFfX7a8qCkcJZaazQ4QgHYtVAgnPQQ/viewform?usp=send_form)
+[Send your feedback here](https://docs.google.com/forms/d/e/1FAIpQLScg_6vArtfKqUUZ9vJ-wFfX7a8qCkcJZaazQ4QgHYtVAgnPQQ/viewform?usp=send_form)
 
 
