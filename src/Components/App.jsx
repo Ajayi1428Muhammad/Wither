@@ -1,4 +1,5 @@
 import { Suspense, lazy, useEffect, useState } from "react";
+import { Analytics } from "@vercel/analytics/react";
 import Hero from "./Hero";
 import HourlyUpdate from "./HourlyUpdate";
 import Updates1 from "./Updates1";
@@ -194,6 +195,7 @@ const App = () => {
           </div>
         </div>
       )}
+      <Analytics />
     </div>
   );
 };
