@@ -1,4 +1,7 @@
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
 const GEMINI_API_KEY = (import.meta.env.VITE_GEMINI_API_KEY || "").trim();
+const genAI = new GoogleGenerativeAI(GEMINI_API_KEY)
 const ASSISTANT_MODE = (import.meta.env.VITE_ASSISTANT_MODE || "local")
   .trim()
   .toLowerCase();
@@ -175,69 +178,37 @@ const localAdvice = (question, weatherData) => {
 const askGemini = async (question, weatherData) => {
   const weather = buildWeatherSnapshot(weatherData);
 
-  const prompt = [
-    "You are an agriculture weather assistant for smallholder farmers.",
-    "Give practical, concise advice in 2-4 short sentences.",
-    "When relevant, include one actionable next step and one caution.",
-    `Weather context: location=${weather.location}, temp=${weather.temp}C, humidity=${weather.humidity}%, wind=${weather.windKmh}km/h, rain_now=${weather.rainNow}mm, rain_chance=${weather.rainChance}%, condition=${weather.condition}.`,
-    `User question: ${question}`,
-  ].join("\n");
+  try {
+    // 1. Initialize the model using the SDK
+    const model = genAI.getGenerativeModel({ 
+      model: GEMINI_MODEL || "gemini-1.5-flash" 
+    });
 
-  let lastError = "Gemini request failed";
-  for (const apiVersion of ["v1beta", "v1"]) {
-    for (const model of GEMINI_MODEL_CANDIDATES) {
-      const endpoint = `https://generativelanguage.googleapis.com/${apiVersion}/models/${model}:generateContent`;
+    // 2. Construct the prompt
+    const prompt = `
+      You are an agriculture weather assistant for smallholder farmers in Nigeria.
+      Weather context: Location=${weather.location}, Temp=${weather.temp}C, Humidity=${weather.humidity}%, Wind=${weather.windKmh}km/h, Rain Chance=${weather.rainChance}%.
+      Current condition: ${weather.condition}.
+      
+      User question: ${question}
+      
+      Give practical, concise advice in 2-4 short sentences. Include one actionable next step and one caution.
+    `;
 
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-goog-api-key": GEMINI_API_KEY,
-        },
-        body: JSON.stringify({
-          contents: [{ parts: [{ text: prompt }] }],
-          generationConfig: {
-            temperature: 0.3,
-            maxOutputTokens: 260,
-          },
-        }),
-      });
+    // 3. Call the AI
+    const result = await model.generateContent(prompt);
+    const response = await result.response;
+    const text = response.text();
 
-      if (res.ok) {
-        const json = await res.json();
-        const answer = json?.candidates?.[0]?.content?.parts
-          ?.map((part) => part.text)
-          .join("\n")
-          .trim();
-
-        if (answer) return answer;
-        lastError = `Gemini returned empty response for ${model} (${apiVersion})`;
-        continue;
-      }
-
-      let apiMessage = "unknown error";
-      try {
-        const body = await res.json();
-        apiMessage = body?.error?.message || JSON.stringify(body);
-      } catch {
-        try {
-          apiMessage = await res.text();
-        } catch {
-          apiMessage = "no response body";
-        }
-      }
-
-      lastError = `${res.status} for ${model} (${apiVersion}): ${apiMessage}`;
-
-      // On auth/quota errors, stop trying other models and bubble fast.
-      if (res.status === 401 || res.status === 403 || res.status === 429) {
-        throw new Error(lastError);
-      }
-    }
+    return text || "I'm thinking... but nothing came out. Try asking again.";
+  } catch (error) {
+    console.error("Gemini SDK Error:", error);
+    // This triggers your catch block in getFarmAssistantReply to use localAdvice as fallback
+    throw error; 
   }
-
-  throw new Error(lastError);
 };
+
+    
 
 export const getFarmAssistantReply = async ({ question, weatherData }) => {
   if (ASSISTANT_MODE !== "gemini") {
