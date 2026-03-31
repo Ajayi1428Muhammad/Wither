@@ -100,9 +100,9 @@ export const useWeather = (searchQuery = "") => {
     // Adding searchQuery to the key ensures the cache resets on new searches
     queryKey: ["weather", normalizedQuery, coords?.lat, coords?.lon, isOnline],
     queryFn: async () => {
-      if (!isOnline) {
-        throw new Error("No internet connection");
-      }
+     // if (!isOnline) {
+     //   throw new Error("No internet connection");
+    //  }
 
       let lat = coords?.lat;
       let lon = coords?.lon;
@@ -122,11 +122,10 @@ export const useWeather = (searchQuery = "") => {
     enabled:
       isOnline &&
       (!!normalizedQuery || (coords?.lat != null && coords?.lon != null)),
-    retry: (failureCount, err) => {
-      if (err?.message === "No internet connection") return false;
-      return failureCount < 1;
-    },
-    staleTime: 1000 * 60 * 5,
+    retry: isOnline,
+    keepPreviousData: true,
+    refetchOnConnect: true, 
+    staleTime: Infinity,
   });
 
   return { ...query, isOnline };
