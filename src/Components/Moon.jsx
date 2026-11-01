@@ -9,7 +9,7 @@ const Moon = () => {
       try {
         // LunarTracker API gives us the Arabic month name and year automatically
         const res = await fetch(
-          `https://api.aladhan.com/v1/gToH?date=${dateStr}`,
+          `https://lunartracker-ng.vercel.app/api/date`,
         );
         const data = await res.json();
         const { hijri } = data
