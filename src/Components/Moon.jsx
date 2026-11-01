@@ -7,17 +7,16 @@ const Moon = () => {
   useEffect(() => {
     const fetchHijri = async () => {
       try {
-        const today = new Date();
-        const dateStr = `${today.getDate()}-${today.getMonth() + 1}-${today.getFullYear()}`;
-        // AlAdhan API gives us the Arabic month name and year automatically
+        // LunarTracker API gives us the Arabic month name and year automatically
         const res = await fetch(
           `https://api.aladhan.com/v1/gToH?date=${dateStr}`,
         );
-        const json = await res.json();
-        setLunarData(json.data.hijri);
+        const data = await res.json();
+        const { hijri } = data
+        setLunarData( hijri );
         setLoading(false);
       } catch (err) {
-        console.error("Lunar Fetch Error", err);
+        console.error("Lunar Fetch Error :", err);
       }
     };
     fetchHijri();
@@ -28,8 +27,8 @@ const Moon = () => {
       <div className="p-10 text-white/20 animate-pulse">Scanning Sky...</div>
     );
 
-  const day = parseInt(lunarData.day);
-  const monthAr = lunarData.month.en; // رَمَضان
+  const day = parseInt(lunarData.hijriDay);
+  const monthAr = lunarData.month; // رَمَضان
   const yearAr = lunarData.year; // ١٤٤٧
   const getPhaseName = (day) => {
     if (day === 1) return "New Moon";
